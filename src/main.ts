@@ -23,7 +23,7 @@ async function init() {
 
     if (status.is_first_run || !status.library_path) {
       ui.showLoader()
-      ui.updateLoaderMessage('Welcome to NOIR — let's set up your gallery')
+      ui.updateLoaderMessage("Welcome to NOIR — let's set up your gallery")
       // Show first-run modal in index.html — UI will handle it
       // For now, trigger the flow:
       await runFirstRun(ui, gallery)

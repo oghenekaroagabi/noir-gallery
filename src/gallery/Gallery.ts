@@ -415,7 +415,7 @@ export class Gallery {
       this.artworks.push(a)
       const texLoader = new THREE.TextureLoader()
       texLoader.load(
-        m.filename,
+        a.src,
         (tex) => {
           a.texture = this.prepTexture(tex)
           if (tex.image?.width) {
@@ -454,7 +454,7 @@ export class Gallery {
     this.artworks.push(a)
     const texLoader = new THREE.TextureLoader()
     texLoader.load(
-      data.src,
+      a.src,
       (tex) => {
         a.texture = this.prepTexture(tex)
         if (tex.image?.width) {
