@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NOIR · Obsidian Art Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="vignette"></div>
+
+  <div id="loader">
+    <div class="loader-mark">N O I R</div>
+    <div class="bar"><i></i></div>
+    <div class="sub" id="loadMsg">Hanging the collection…</div>
+  </div>
+
+  <div id="topbar">
+    <div class="brand">NOIR<em>OBSIDIAN GALLERY</em></div>
+    <div id="controls-right">
+      <div class="seg" id="modeSeg">
+        <button data-mode="ring" class="active">Carousel</button>
+        <button data-mode="wall">Gallery Wall</button>
+        <button data-mode="grid">Zero-G</button>
+      </div>
+      <button id="uploadBtn">+ Upload Art</button>
+    </div>
+  </div>
+
+  <div id="tools">
+    <button class="tbtn" id="capBtn" title="Save this view">
+      <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+    <button class="tbtn" id="shufBtn" title="Rearrange collection">
+      <svg viewBox="0 0 24 24"><path d="M3 7h4l10 10h4m0 0-3-3m3 3-3 3M3 17h4l2.5-2.5M13.5 9.5 17 7h4m0 0-3-3m3 3-3 3"/></svg>
+    </button>
+    <button class="tbtn" id="fsBtn" title="Fullscreen">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+    <div id="lightWrap">
+      <input type="range" id="mood" min="0" max="100" value="55">
+      <label>Light</label>
+    </div>
+  </div>
+
+  <div id="hint">Drag to orbit · Scroll or pinch to zoom · Tap an artwork to focus</div>
+
+  <div id="backdrop"></div>
+  <div id="modal">
+    <div class="row">
+      <img id="mImg" alt="">
+      <div>
+        <h2 id="mTitle"></h2>
+        <div class="meta" id="mMeta"></div>
+      </div>
+    </div>
+    <p class="desc" id="mDesc"></p>
+    <div class="actions">
+      <button class="mbtn gold" id="mClose">Return to Gallery</button>
+      <div class="nav">
+        <button class="mbtn" id="mPrev" title="Previous">&#8249;</button>
+        <button class="mbtn" id="mNext" title="Next">&#8250;</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

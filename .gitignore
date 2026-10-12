@@ -33,5 +33,4 @@ src-tauri/icons/*.png
 !src-tauri/icons/icon-1024.png
 
 # Legacy / temp files
-*.html
 obsidian-art-gallery*
