@@ -14,8 +14,7 @@ tauri = { version = "2", features = [
   "fs-all",
   "shell-open",
   "window-state",
-  "global-shortcut",
-  "clipboard-manager"
+  "global-shortcut"
 ] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
