@@ -8,14 +8,7 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [
-  "dialog-open",
-  "dialog-save",
-  "fs-all",
-  "shell-open",
-  "window-state",
-  "global-shortcut"
-] }
+tauri = { version = "2" }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
