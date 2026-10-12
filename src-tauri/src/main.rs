@@ -1,3 +1,9 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use tauri::Manager;
+
+mod commands;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -24,8 +30,9 @@ pub fn run() {
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
+                if let Some(window) = app.get_webview_window("main") {
+                    window.open_devtools();
+                }
             }
             Ok(())
         })
@@ -33,4 +40,6 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-mod commands;
+fn main() {
+    run();
+}

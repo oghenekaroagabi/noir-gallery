@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager, WebviewWindow};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -25,137 +26,23 @@ pub struct SeedArtwork {
     pub filename: String,
 }
 
-fn get_app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FirstRunStatus {
+    pub is_first_run: bool,
+    pub library_path: Option<String>,
+}
+
+/* ============ Helpers ============ */
+
+fn ensure_artworks_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let artworks_dir = dir.join("artworks");
-    fs::create_dir_all(&artworks_dir).map_err(|e| e.to_string())?;
-    Ok(artworks_dir)
-}
-
-#[tauri::command]
-async fn get_app_data_dir(app: AppHandle) -> Result<String, String> {
-    let dir = get_app_data_dir(&app)?;
-    Ok(dir.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-async fn open_image_files(app: AppHandle) -> Result<Vec<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
-    
-    let files = app.dialog()
-        .file()
-        .add_filter("Images", &["png", "jpg", "jpeg", "webp", "gif"])
-        .pick_files()
-        .await
-        .map_err(|e| e.to_string())?
-        .unwrap_or_default();
-    
-    Ok(files.into_iter().map(|p| p.to_string()).collect())
-}
-
-#[tauri::command]
-async fn copy_image_to_app_data(app: AppHandle, src_path: String, filename: String) -> Result<String, String> {
-    let artworks_dir = get_app_data_dir(&app)?;
-    let dest_path = artworks_dir.join(&filename);
-    
-    fs::copy(&src_path, &dest_path).map_err(|e| e.to_string())?;
-    
-    Ok(dest_path.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-async fn save_artwork_metadata(app: AppHandle, metadata: ArtworkMetadata) -> Result<(), String> {
-    let artworks_dir = get_app_data_dir(&app)?;
-    let meta_path = artworks_dir.join("metadata.json");
-    
-    let mut artworks: Vec<ArtworkMetadata> = if meta_path.exists() {
-        let content = fs::read_to_string(&meta_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&content).unwrap_or_default()
-    } else {
-        Vec::new()
-    };
-    
-    // Remove existing if updating
-    artworks.retain(|a| a.id != metadata.id);
-    artworks.push(metadata);
-    
-    let content = serde_json::to_string_pretty(&artworks).map_err(|e| e.to_string())?;
-    fs::write(&meta_path, content).map_err(|e| e.to_string())?;
-    
-    Ok(())
-}
-
-#[tauri::command]
-async fn load_artwork_metadata(app: AppHandle) -> Result<Vec<ArtworkMetadata>, String> {
-    let artworks_dir = get_app_data_dir(&app)?;
-    let meta_path = artworks_dir.join("metadata.json");
-    
-    if !meta_path.exists() {
-        return Ok(Vec::new());
-    }
-    
-    let content = fs::read_to_string(&meta_path).map_err(|e| e.to_string())?;
-    let artworks = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    
+    let artworks = dir.join("artworks");
+    fs::create_dir_all(&artworks).map_err(|e| e.to_string())?;
     Ok(artworks)
 }
 
-#[tauri::command]
-async fn delete_artwork(app: AppHandle, id: String) -> Result<(), String> {
-    let artworks_dir = get_app_data_dir(&app)?;
-    let meta_path = artworks_dir.join("metadata.json");
-    
-    // Load metadata to get filename
-    let content = fs::read_to_string(&meta_path).map_err(|e| e.to_string())?;
-    let mut artworks: Vec<ArtworkMetadata> = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    
-    if let Some(idx) = artworks.iter().position(|a| a.id == id) {
-        let artwork = &artworks[idx];
-        let img_path = artworks_dir.join(&artwork.filename);
-        if img_path.exists() {
-            fs::remove_file(&img_path).map_err(|e| e.to_string())?;
-        }
-        artworks.remove(idx);
-        
-        let content = serde_json::to_string_pretty(&artworks).map_err(|e| e.to_string())?;
-        fs::write(&meta_path, content).map_err(|e| e.to_string())?;
-    }
-    
-    Ok(())
-}
-
-#[tauri::command]
-async fn save_image(app: AppHandle, window: WebviewWindow, data_url: String) -> Result<(), String> {
-    use tauri_plugin_dialog::DialogExt;
-    
-    // Extract base64 data from data URL
-    let base64_data = data_url.strip_prefix("data:image/png;base64,").unwrap_or(&data_url);
-    let bytes = BASE64.decode(base64_data).map_err(|e| e.to_string())?;
-    
-    let file_path = app.dialog()
-        .file()
-        .add_filter("PNG Image", &["png"])
-        .set_file_name(format!("noir-gallery-{}.png", chrono::Local::now().format("%Y%m%d-%H%M%S")))
-        .save_file()
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or("User cancelled")?;
-    
-    fs::write(&file_path, bytes).map_err(|e| e.to_string())?;
-    
-    Ok(())
-}
-
-#[tauri::command]
-async fn toggle_fullscreen(window: WebviewWindow) -> Result<bool, String> {
-    let is_fullscreen = window.is_fullscreen().map_err(|e| e.to_string())?;
-    window.set_fullscreen(!is_fullscreen).map_err(|e| e.to_string())?;
-    Ok(!is_fullscreen)
-}
-
-#[tauri::command]
-async fn get_seed_artworks() -> Result<Vec<SeedArtwork>, String> {
-    Ok(vec![
+fn seed_definitions() -> Vec<SeedArtwork> {
+    vec![
         SeedArtwork {
             title: "The Starry Night".into(),
             artist: "Vincent van Gogh".into(),
@@ -184,83 +71,209 @@ async fn get_seed_artworks() -> Result<Vec<SeedArtwork>, String> {
             desc: "Hokusai's towering claw of Prussian blue dominates the print — a wave that threatens to engulf three fishing boats, while Mount Fuji sits small and serene in the background. Part of the Thirty-six Views of Mount Fuji series, it is arguably the most recognized work of Japanese art in the world.".into(),
             filename: "great-wave.jpg".into(),
         },
-    ])
+    ]
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FirstRunStatus {
-    pub is_first_run: bool,
-    pub library_path: Option<String>,
+/* ============ Commands ============ */
+
+#[tauri::command]
+pub fn get_app_data_dir(app: AppHandle) -> Result<String, String> {
+    let dir = ensure_artworks_dir(&app)?;
+    Ok(dir.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-async fn check_first_run(app: AppHandle) -> Result<FirstRunStatus, String> {
-    let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let flag_path = app_data.join(".first_run_complete");
-    let library_path_file = app_data.join("library_path.txt");
-    
-    let is_first_run = !flag_path.exists();
-    let library_path = if library_path_file.exists() {
-        Some(fs::read_to_string(&library_path_file).map_err(|e| e.to_string())?.trim().to_string())
-    } else {
-        None
-    };
-    
-    Ok(FirstRunStatus { is_first_run, library_path })
-}
-
-#[tauri::command]
-async fn pick_library_folder(app: AppHandle) -> Result<Option<String>, String> {
+pub fn open_image_files(app: AppHandle) -> Result<Vec<String>, String> {
     use tauri_plugin_dialog::DialogExt;
-    
-    let folder = app.dialog()
+    let files = app
+        .dialog()
         .file()
-        .set_title("Choose your Gallery Library folder")
-        .pick_folder()
-        .await
-        .map_err(|e| e.to_string())?;
-    
-    Ok(folder.map(|p| p.to_string()))
+        .add_filter("Images", &["png", "jpg", "jpeg", "webp", "gif"])
+        .blocking_pick_files();
+
+    Ok(files
+        .unwrap_or_default()
+        .into_iter()
+        .map(|p| p.to_string())
+        .collect())
 }
 
 #[tauri::command]
-async fn complete_first_run(app: AppHandle, library_path: String) -> Result<(), String> {
-    let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let flag_path = app_data.join(".first_run_complete");
-    let library_path_file = app_data.join("library_path.txt");
-    
-    fs::write(&flag_path, "done").map_err(|e| e.to_string())?;
-    fs::write(&library_path_file, library_path).map_err(|e| e.to_string())?;
-    
-    // Also create the library folder structure
-    let lib_path = PathBuf::from(library_path);
-    fs::create_dir_all(&lib_path).map_err(|e| e.to_string())?;
-    fs::create_dir_all(lib_path.join("artworks")).map_err(|e| e.to_string())?;
-    
+pub fn copy_image_to_app_data(app: AppHandle, src_path: String, filename: String) -> Result<String, String> {
+    let dir = ensure_artworks_dir(&app)?;
+    let dest = dir.join(&filename);
+    fs::copy(&src_path, &dest).map_err(|e| e.to_string())?;
+    Ok(dest.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn save_artwork_metadata(app: AppHandle, metadata: ArtworkMetadata) -> Result<(), String> {
+    let dir = ensure_artworks_dir(&app)?;
+    let meta_path = dir.join("metadata.json");
+
+    let mut artworks: Vec<ArtworkMetadata> = if meta_path.exists() {
+        let content = fs::read_to_string(&meta_path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&content).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    artworks.retain(|a| a.id != metadata.id);
+    artworks.push(metadata);
+
+    let content = serde_json::to_string_pretty(&artworks).map_err(|e| e.to_string())?;
+    fs::write(&meta_path, content).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-async fn import_seed_artworks(app: AppHandle, library_path: String) -> Result<Vec<ArtworkMetadata>, String> {
-    let seed_artworks = get_seed_artworks().await?;
-    let lib_path = PathBuf::from(library_path);
-    let artworks_dir = lib_path.join("artworks");
-    let meta_path = artworks_dir.join("metadata.json");
-    
-    fs::create_dir_all(&artworks_dir).map_err(|e| e.to_string())?;
-    
-    let mut imported = Vec::new();
-    
-    for seed in seed_artworks {
-        let src_path = PathBuf::from("src-tauri/assets/seed").join(&seed.filename);
-        let dest_path = artworks_dir.join(&seed.filename);
-        
-        // Copy seed image if it exists
-        if src_path.exists() {
-            fs::copy(&src_path, &dest_path).map_err(|e| e.to_string())?;
+pub fn load_artwork_metadata(app: AppHandle) -> Result<Vec<ArtworkMetadata>, String> {
+    let dir = ensure_artworks_dir(&app)?;
+    let meta_path = dir.join("metadata.json");
+
+    if !meta_path.exists() {
+        return Ok(Vec::new());
+    }
+
+    let content = fs::read_to_string(&meta_path).map_err(|e| e.to_string())?;
+    let artworks = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    Ok(artworks)
+}
+
+#[tauri::command]
+pub fn delete_artwork(app: AppHandle, id: String) -> Result<(), String> {
+    let dir = ensure_artworks_dir(&app)?;
+    let meta_path = dir.join("metadata.json");
+    if !meta_path.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(&meta_path).map_err(|e| e.to_string())?;
+    let mut artworks: Vec<ArtworkMetadata> = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+
+    if let Some(idx) = artworks.iter().position(|a| a.id == id) {
+        let img_path = dir.join(&artworks[idx].filename);
+        if img_path.exists() {
+            let _ = fs::remove_file(&img_path);
         }
-        
-        let metadata = ArtworkMetadata {
+        artworks.remove(idx);
+        let content = serde_json::to_string_pretty(&artworks).map_err(|e| e.to_string())?;
+        fs::write(&meta_path, content).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn save_image(app: AppHandle, data_url: String) -> Result<(), String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let base64_data = data_url
+        .strip_prefix("data:image/png;base64,")
+        .unwrap_or(&data_url);
+    let bytes = BASE64.decode(base64_data).map_err(|e| e.to_string())?;
+
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let chosen = app
+        .dialog()
+        .file()
+        .add_filter("PNG Image", &["png"])
+        .set_file_name(format!("noir-gallery-{}.png", ts))
+        .blocking_save_file();
+
+    if let Some(path) = chosen {
+        let out = path.to_string();
+        fs::write(out, bytes).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn toggle_fullscreen(window: WebviewWindow) -> Result<bool, String> {
+    let is_fs = window.is_fullscreen().map_err(|e| e.to_string())?;
+    window.set_fullscreen(!is_fs).map_err(|e| e.to_string())?;
+    Ok(!is_fs)
+}
+
+#[tauri::command]
+pub fn get_seed_artworks() -> Result<Vec<SeedArtwork>, String> {
+    Ok(seed_definitions())
+}
+
+#[tauri::command]
+pub fn check_first_run(app: AppHandle) -> Result<FirstRunStatus, String> {
+    let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let flag = app_data.join(".first_run_complete");
+    let lib_file = app_data.join("library_path.txt");
+
+    let is_first_run = !flag.exists();
+    let library_path = if lib_file.exists() {
+        Some(
+            fs::read_to_string(&lib_file)
+                .map_err(|e| e.to_string())?
+                .trim()
+                .to_string(),
+        )
+    } else {
+        None
+    };
+
+    Ok(FirstRunStatus {
+        is_first_run,
+        library_path,
+    })
+}
+
+#[tauri::command]
+pub fn pick_library_folder(app: AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let folder = app
+        .dialog()
+        .file()
+        .set_title("Choose your Gallery Library folder")
+        .blocking_pick_folder();
+
+    Ok(folder.map(|p| p.to_string()))
+}
+
+#[tauri::command]
+pub fn complete_first_run(app: AppHandle, library_path: String) -> Result<(), String> {
+    let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let flag = app_data.join(".first_run_complete");
+    let lib_file = app_data.join("library_path.txt");
+
+    fs::write(&flag, "done").map_err(|e| e.to_string())?;
+    fs::write(&lib_file, &library_path).map_err(|e| e.to_string())?;
+
+    let lib_path = PathBuf::from(&library_path);
+    fs::create_dir_all(&lib_path).map_err(|e| e.to_string())?;
+    fs::create_dir_all(lib_path.join("artworks")).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn import_seed_artworks(library_path: String) -> Result<Vec<ArtworkMetadata>, String> {
+    let artworks = PathBuf::from(&library_path).join("artworks");
+    fs::create_dir_all(&artworks).map_err(|e| e.to_string())?;
+
+    let mut imported = Vec::new();
+
+    for seed in seed_definitions() {
+        let bytes: &[u8] = match seed.filename.as_str() {
+            "starry-night.jpg" => include_bytes!("../assets/seed/starry-night.jpg"),
+            "mona-lisa.jpg" => include_bytes!("../assets/seed/mona-lisa.jpg"),
+            "girl-pearl-earring.jpg" => include_bytes!("../assets/seed/girl-pearl-earring.jpg"),
+            "great-wave.jpg" => include_bytes!("../assets/seed/great-wave.jpg"),
+            _ => continue,
+        };
+
+        let dest = artworks.join(&seed.filename);
+        fs::write(&dest, bytes).map_err(|e| e.to_string())?;
+
+        imported.push(ArtworkMetadata {
             id: Uuid::new_v4().to_string(),
             title: seed.title,
             artist: seed.artist,
@@ -268,15 +281,12 @@ async fn import_seed_artworks(app: AppHandle, library_path: String) -> Result<Ve
             desc: seed.desc,
             filename: seed.filename,
             uploaded: false,
-        };
-        
-        imported.push(metadata);
+        });
     }
-    
-    // Save metadata
+
+    let meta_path = artworks.join("metadata.json");
     let content = serde_json::to_string_pretty(&imported).map_err(|e| e.to_string())?;
     fs::write(&meta_path, content).map_err(|e| e.to_string())?;
-    
+
     Ok(imported)
 }
-

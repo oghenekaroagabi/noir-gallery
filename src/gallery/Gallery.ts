@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 
 export type Mode = 'ring' | 'wall' | 'grid'
 
@@ -353,8 +353,9 @@ export class Gallery {
   }
 
   async loadSeedArtworks(seeds: SeedArtwork[], libraryPath: string): Promise<void> {
+    const base = libraryPath.replace(/\\/g, '/')
     for (const s of seeds) {
-      const src = `${libraryPath}/artworks/${s.filename}`
+      const src = convertFileSrc(`${base}/artworks/${s.filename}`)
       const a: Artwork = {
         id: crypto.randomUUID(),
         title: s.title,
@@ -401,7 +402,7 @@ export class Gallery {
         artist: m.artist,
         year: m.year,
         desc: m.desc,
-        src: m.filename,
+        src: convertFileSrc(m.filename),
         texture: null,
         aspect: 0.8,
         group: null,
@@ -440,7 +441,7 @@ export class Gallery {
       artist: data.artist,
       year: data.year,
       desc: data.desc,
-      src: data.src,
+      src: convertFileSrc(data.src),
       texture: null,
       aspect: 0.8,
       group: null,
