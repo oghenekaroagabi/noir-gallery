@@ -1,8 +1,5 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Initialize Sentry for error tracking (opt-in via SENTRY_DSN env var)
-    let _sentry_guard = init_sentry();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -34,20 +31,6 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-fn init_sentry() -> Option<sentry::ClientInitGuard> {
-    std::env::var("SENTRY_DSN").ok().map(|dsn| {
-        sentry::init((
-            dsn,
-            sentry::ClientOptions {
-                release: sentry::release_name!(),
-                attach_stacktrace: true,
-                send_default_pii: false,
-                ..Default::default()
-            },
-        ))
-    })
 }
 
 mod commands;
