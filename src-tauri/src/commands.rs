@@ -242,6 +242,7 @@ pub fn pick_library_folder(app: AppHandle) -> Result<Option<String>, String> {
 #[tauri::command]
 pub fn complete_first_run(app: AppHandle, library_path: String) -> Result<(), String> {
     let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&app_data).map_err(|e| e.to_string())?;
     let flag = app_data.join(".first_run_complete");
     let lib_file = app_data.join("library_path.txt");
 
