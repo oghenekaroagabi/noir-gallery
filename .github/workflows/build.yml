@@ -25,19 +25,16 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - name: Install dependencies
-        working-directory: noir-gallery
         run: npm install
 
       - name: Check Rust code
-        working-directory: noir-gallery/src-tauri
+        working-directory: src-tauri
         run: cargo check
 
       - name: Build frontend
-        working-directory: noir-gallery
         run: npm run build
 
       - name: Build Tauri
-        working-directory: noir-gallery
         run: npm run tauri:build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
