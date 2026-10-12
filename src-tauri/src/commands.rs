@@ -1,12 +1,9 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager, WebviewWindow};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
-use once_cell::sync::OnceCell;
-
-static FIRST_RUN_FLAG: OnceCell<bool> = OnceCell::new();
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ArtworkMetadata {
@@ -261,9 +258,6 @@ async fn import_seed_artworks(app: AppHandle, library_path: String) -> Result<Ve
         // Copy seed image if it exists
         if src_path.exists() {
             fs::copy(&src_path, &dest_path).map_err(|e| e.to_string())?;
-        } else {
-            // Create placeholder if seed image not found
-            create_placeholder_image(&dest_path, &seed.title, &seed.artist).map_err(|e| e.to_string())?;
         }
         
         let metadata = ArtworkMetadata {
@@ -286,33 +280,3 @@ async fn import_seed_artworks(app: AppHandle, library_path: String) -> Result<Ve
     Ok(imported)
 }
 
-fn create_placeholder_image(path: &Path, title: &str, artist: &str) -> Result<(), String> {
-    use image::{ImageBuffer, Rgb, RgbImage};
-    use imageproc::drawing::draw_text_mut;
-    use rusttype::{Font, Scale};
-    
-    let width = 512;
-    let height = 640;
-    let mut img: RgbImage = ImageBuffer::new(width, height);
-    
-    // Dark background
-    for pixel in img.pixels_mut() {
-        *pixel = Rgb([8, 8, 12]);
-    }
-    
-    // Try to load a font, fallback to basic drawing
-    if let Ok(font_data) = fs::read("/Windows/Fonts/georgia.ttf") {
-        if let Some(font) = Font::try_from_vec(font_data) {
-            let scale = Scale::uniform(32.0);
-            let color = Rgb([201, 162, 39]); // gold
-            
-            let title_truncated = if title.len() > 22 { format!("{}...", &title[..22]) } else { title.to_string() };
-            
-            draw_text_mut(&mut img, color, 60, 540, scale, &font, &title_truncated);
-            draw_text_mut(&mut img, Rgb([154, 151, 163]), 60, 580, Scale::uniform(24.0), &font, artist);
-        }
-    }
-    
-    img.save(path).map_err(|e| e.to_string())?;
-    Ok(())
-}
