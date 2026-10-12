@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+src-tauri/target/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rust
+*.rs.bk
+Cargo.lock
+
+# Tauri
+src-tauri/gen/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Generated icons (keep source)
+src-tauri/icons/*.png
+!src-tauri/icons/icon-1024.png
+
+# Legacy / temp files
+*.html
+obsidian-art-gallery*
