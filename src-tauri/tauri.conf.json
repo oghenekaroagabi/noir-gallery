@@ -46,10 +46,7 @@
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": "",
-      "nsis": {
-        "shortcutName": "NOIR Gallery"
-      }
+      "timestampUrl": ""
     },
     "macOS": {
       "entitlements": null,
