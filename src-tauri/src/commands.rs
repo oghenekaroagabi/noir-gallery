@@ -41,6 +41,22 @@ fn ensure_artworks_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(artworks)
 }
 
+/// Appends a diagnostic line to `<appdata>/com.noir.gallery/startup.log`.
+fn log_line(app: &AppHandle, msg: &str) {
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = fs::create_dir_all(&dir);
+        let path = dir.join("startup.log");
+        let ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0);
+        if let Ok(mut f) = fs::OpenOptions::new().create(true).append(true).open(&path) {
+            use std::io::Write;
+            let _ = writeln!(f, "[{}ms] {}", ms, msg);
+        }
+    }
+}
+
 fn seed_definitions() -> Vec<SeedArtwork> {
     vec![
         SeedArtwork {
@@ -204,7 +220,13 @@ pub fn get_seed_artworks() -> Result<Vec<SeedArtwork>, String> {
 }
 
 #[tauri::command]
+pub fn log_startup(app: AppHandle, msg: String) {
+    log_line(&app, &msg);
+}
+
+#[tauri::command]
 pub fn check_first_run(app: AppHandle) -> Result<FirstRunStatus, String> {
+    log_line(&app, "check_first_run: entered");
     let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let flag = app_data.join(".first_run_complete");
     let lib_file = app_data.join("library_path.txt");
@@ -221,6 +243,7 @@ pub fn check_first_run(app: AppHandle) -> Result<FirstRunStatus, String> {
         None
     };
 
+    log_line(&app, "check_first_run: done");
     Ok(FirstRunStatus {
         is_first_run,
         library_path,
@@ -230,17 +253,23 @@ pub fn check_first_run(app: AppHandle) -> Result<FirstRunStatus, String> {
 #[tauri::command]
 pub fn pick_library_folder(app: AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
+    log_line(&app, "pick_library_folder: dialog opening");
     let folder = app
         .dialog()
         .file()
         .set_title("Choose your Gallery Library folder")
         .blocking_pick_folder();
 
+    log_line(
+        &app,
+        &format!("pick_library_folder: returned (picked={})", folder.is_some()),
+    );
     Ok(folder.map(|p| p.to_string()))
 }
 
 #[tauri::command]
 pub fn complete_first_run(app: AppHandle, library_path: String) -> Result<(), String> {
+    log_line(&app, "complete_first_run: entered");
     let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&app_data).map_err(|e| e.to_string())?;
     let flag = app_data.join(".first_run_complete");
@@ -252,6 +281,7 @@ pub fn complete_first_run(app: AppHandle, library_path: String) -> Result<(), St
     let lib_path = PathBuf::from(&library_path);
     fs::create_dir_all(&lib_path).map_err(|e| e.to_string())?;
     fs::create_dir_all(lib_path.join("artworks")).map_err(|e| e.to_string())?;
+    log_line(&app, "complete_first_run: done");
     Ok(())
 }
 

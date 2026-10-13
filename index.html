@@ -4,6 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>NOIR · Obsidian Art Gallery</title>
+  <script>
+    (function () {
+      window.__NOIR = { moduleLoaded: false, last: 'booting' };
+      function paint(msg) {
+        window.__NOIR.last = msg;
+        try {
+          var l = document.getElementById('loader');
+          var s = document.getElementById('loadMsg');
+          if (l) { l.classList.remove('done'); l.style.opacity = '1'; l.style.pointerEvents = 'auto'; l.style.display = 'flex'; }
+          if (s) { s.textContent = msg; s.style.color = (msg.indexOf('\u274C') === 0) ? '#ff6b6b' : ''; }
+        } catch (e) {}
+        try { console.log('[NOIR] ' + msg); } catch (e) {}
+      }
+      window.__noirPaint = paint;
+      window.addEventListener('error', function (e) {
+        paint('\u274C JS error: ' + (e.message || 'unknown') + (e.filename ? '  @ ' + e.filename + ':' + e.lineno : ''));
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        paint('\u274C Rejection: ' + (r && r.message ? r.message : String(r)));
+      });
+      setTimeout(function () {
+        if (!window.__NOIR.moduleLoaded) {
+          paint('\u274C Frontend module never loaded (last: ' + window.__NOIR.last + ')');
+        }
+      }, 8000);
+    })();
+  </script>
 </head>
 <body>
   <div id="stage"></div>

@@ -26,8 +26,10 @@ pub fn run() {
             commands::complete_first_run,
             commands::pick_library_folder,
             commands::import_seed_artworks,
+            commands::log_startup,
         ])
         .setup(|app| {
+            commands::log_startup(app.handle().clone(), "rust: builder setup complete".to_string());
             #[cfg(debug_assertions)]
             {
                 if let Some(window) = app.get_webview_window("main") {

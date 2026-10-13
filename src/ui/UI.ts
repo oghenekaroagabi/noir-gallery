@@ -157,6 +157,10 @@ export class UI {
     this.loader.classList.add('done')
   }
 
+  showLoader(): void {
+    this.loader.classList.remove('done')
+  }
+
   updateLoaderMessage(msg: string): void {
     this.loadMsg.textContent = msg
   }
