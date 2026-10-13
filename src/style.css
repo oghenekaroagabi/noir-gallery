@@ -154,6 +154,17 @@ body.fs #vignette {
   border-radius: 0;
 }
 
+/* Minimize: fade the whole window out before it goes to the taskbar */
+body.minimizing #stage,
+body.minimizing #vignette,
+body.minimizing #titlebar,
+body.minimizing #topbar,
+body.minimizing #tools,
+body.minimizing #hint {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
 /* ---------- Title bar (frameless window controls) ---------- */
 #titlebar {
   position: fixed;

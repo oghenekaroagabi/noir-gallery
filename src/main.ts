@@ -138,7 +138,13 @@ document.addEventListener('keydown', (e) => {
 
 // Frameless window controls
 const appWindow = getCurrentWindow()
-document.getElementById('tb-min')?.addEventListener('click', () => appWindow.minimize())
+document.getElementById('tb-min')?.addEventListener('click', async () => {
+  // Dim away before going to the taskbar, so it doesn't vanish abruptly
+  document.body.classList.add('minimizing')
+  await new Promise((r) => setTimeout(r, 200))
+  await appWindow.minimize()
+  document.body.classList.remove('minimizing')
+})
 document.getElementById('tb-close')?.addEventListener('click', () => appWindow.close())
 
 // Maximize button toggles between □ (maximize) and ❐ (restore)

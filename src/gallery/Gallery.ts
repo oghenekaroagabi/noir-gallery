@@ -621,8 +621,8 @@ export class Gallery {
     if (this.bloomPass) this.bloomPass.strength = 0.15 + v * 0.5
     if (this.dust) this.dust.material.opacity = 0.25 + v * 0.45
     // Tie background + fog to mood so the whole room brightens/dims together
-    // v=0 -> 1.2 (dark). v=0.5 -> 3.0 (default = old max). v=1 -> 4.8 (brighter)
-    const bg = new THREE.Color(0x1a1a2e).multiplyScalar(1.2 + v * 3.6)
+    // v=0 -> 0.6 (dark). v=0.5 -> 2.4 (default = calm medium). v=1 -> 4.2 (bright)
+    const bg = new THREE.Color(0x1a1a2e).multiplyScalar(0.6 + v * 3.6)
     this.scene.background = bg
     if (this.scene.fog) this.scene.fog.color.copy(bg)
   }
@@ -645,6 +645,12 @@ export class Gallery {
   }
 
   async toggleFullscreen(): Promise<void> {
+    // Fade the canvas toward black so the resize happens while dark — the
+    // jump is never visible, it reads as a cinematic cut.
+    this.renderer.domElement.style.transition = 'opacity 250ms ease'
+    this.renderer.domElement.style.opacity = '0'
+    await new Promise((r) => setTimeout(r, 260))
+
     const nowFs = await invoke<boolean>('toggle_fullscreen')
     // Hide all chrome in fullscreen for a pure, immersive canvas
     document.body.classList.toggle('fs', nowFs)
@@ -652,6 +658,12 @@ export class Gallery {
     // instantly but the resize event can land before layout settles, leaving
     // the canvas at its old size and showing a gap. Force it after a tick.
     setTimeout(() => this.onResize(), 120)
+
+    await new Promise((r) => setTimeout(r, 130))
+    this.renderer.domElement.style.opacity = '1'
+    setTimeout(() => {
+      this.renderer.domElement.style.transition = ''
+    }, 360)
   }
 
   zoomIn(): void {
