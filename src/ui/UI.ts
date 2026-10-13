@@ -155,6 +155,11 @@ export class UI {
 
   hideLoader(): void {
     this.loader.classList.add('done')
+    // Clear inline overrides that the startup error-reporter may have set,
+    // so the `.done` class (opacity:0) can actually take effect.
+    this.loader.style.removeProperty('opacity')
+    this.loader.style.removeProperty('pointer-events')
+    this.loader.style.removeProperty('display')
   }
 
   showLoader(): void {

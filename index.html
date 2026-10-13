@@ -12,8 +12,9 @@
         try {
           var l = document.getElementById('loader');
           var s = document.getElementById('loadMsg');
-          if (l) { l.classList.remove('done'); l.style.opacity = '1'; l.style.pointerEvents = 'auto'; l.style.display = 'flex'; }
-          if (s) { s.textContent = msg; s.style.color = (msg.indexOf('\u274C') === 0) ? '#ff6b6b' : ''; }
+          var isErr = msg.indexOf('\u274C') === 0;
+          if (l && isErr) { l.classList.remove('done'); l.style.opacity = '1'; l.style.pointerEvents = 'auto'; l.style.display = 'flex'; }
+          if (s) { s.textContent = msg; s.style.color = isErr ? '#ff6b6b' : ''; }
         } catch (e) {}
         try { console.log('[NOIR] ' + msg); } catch (e) {}
       }
