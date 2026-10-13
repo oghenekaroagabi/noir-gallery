@@ -2,6 +2,7 @@ import './style.css'
 import { Gallery, type SeedArtwork } from './gallery/Gallery'
 import { UI } from './ui/UI'
 import { invoke } from '@tauri-apps/api/core'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 declare global {
   interface Window {
@@ -61,6 +62,8 @@ async function init(): Promise<void> {
     ui.showLoader()
     await loadGallery(ui, gallery, status.library_path)
   }
+
+  await premiumReveal(ui)
 }
 
 async function runFirstRun(ui: UI, gallery: Gallery): Promise<void> {
@@ -81,8 +84,6 @@ async function runFirstRun(ui: UI, gallery: Gallery): Promise<void> {
 
   await gallery.loadSeedArtworks(seeds, folder)
   paint('9/9 · ready')
-  ui.hideLoader()
-  ui.showHint()
 }
 
 async function loadGallery(ui: UI, gallery: Gallery, libraryPath: string): Promise<void> {
@@ -96,17 +97,34 @@ async function loadGallery(ui: UI, gallery: Gallery, libraryPath: string): Promi
     await gallery.loadUploadedArtworks(saved)
   }
   paint('9/9 · ready')
+}
+
+/** Premium reveal: deliberate "hanging" pause before the gallery appears. */
+async function premiumReveal(ui: UI): Promise<void> {
+  paint('Hanging the collection…')
+  await new Promise((r) => setTimeout(r, 2000))
   ui.hideLoader()
   ui.showHint()
 }
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+  // Disable refresh (F5 / Ctrl+R) — a desktop app shouldn't reload like a browser
+  if (e.key === 'F5' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r')) {
+    e.preventDefault()
+    return
+  }
   if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
     e.preventDefault()
     invoke<boolean>('toggle_fullscreen')
   }
 })
+
+// Frameless window controls
+const appWindow = getCurrentWindow()
+document.getElementById('tb-min')?.addEventListener('click', () => appWindow.minimize())
+document.getElementById('tb-max')?.addEventListener('click', () => appWindow.toggleMaximize())
+document.getElementById('tb-close')?.addEventListener('click', () => appWindow.close())
 
 window.addEventListener('focus', () => document.dispatchEvent(new CustomEvent('gallery:focus')))
 window.addEventListener('blur', () => document.dispatchEvent(new CustomEvent('gallery:blur')))

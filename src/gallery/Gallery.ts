@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 
 export type Mode = 'ring' | 'wall' | 'grid'
@@ -88,7 +89,7 @@ export class Gallery {
         new THREE.Vector2(window.innerWidth, window.innerHeight), 0.38, 0.55, 0.8
       )
       this.composer.addPass(this.bloomPass)
-      this.composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader))
+      this.composer.addPass(new THREE.OutputPass())
     } catch {
       this.composer = null
     }

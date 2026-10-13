@@ -35,6 +35,21 @@
   </script>
 </head>
 <body>
+  <div id="titlebar">
+    <div class="tb-drag"></div>
+    <div class="tb-controls">
+      <button id="tb-min" title="Minimize">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+      </button>
+      <button id="tb-max" title="Maximize">
+        <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>
+      </button>
+      <button id="tb-close" title="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </div>
+
   <div id="stage"></div>
   <div id="vignette"></div>
 
@@ -45,7 +60,6 @@
   </div>
 
   <div id="topbar">
-    <div class="brand">NOIR<em>OBSIDIAN GALLERY</em></div>
     <div id="controls-right">
       <div class="seg" id="modeSeg">
         <button data-mode="ring" class="active">Carousel</button>

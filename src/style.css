@@ -106,16 +106,78 @@ canvas {
   color: var(--txt-dim);
 }
 
+/* ---------- Title bar (frameless window controls) ---------- */
+#titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  border-bottom: 1px solid rgba(201, 162, 39, 0.15);
+}
+
+.tb-drag {
+  flex: 1;
+  height: 100%;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.tb-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.tb-controls button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--txt-dim);
+  width: 44px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tb-controls button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tb-controls button:hover {
+  color: var(--gold-bright);
+  background: rgba(201, 162, 39, 0.08);
+}
+
+.tb-controls button#tb-close:hover {
+  color: #fff;
+  background: #e81123;
+}
+
 /* ---------- Top glass bar ---------- */
 #topbar {
   position: fixed;
-  top: 0;
+  top: 32px;
   left: 0;
   right: 0;
   z-index: 50;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 14px 16px;
   pointer-events: none;
   gap: 10px;
