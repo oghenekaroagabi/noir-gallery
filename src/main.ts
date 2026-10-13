@@ -22,6 +22,8 @@ interface ArtworkMetadata {
   uploaded: boolean
 }
 
+let gallery: Gallery | null = null
+
 if (window.__NOIR) window.__NOIR.moduleLoaded = true
 
 /** Paint the current step on the loader AND append it to a log file (best effort). */
@@ -43,7 +45,7 @@ function paint(msg: string): void {
 async function init(): Promise<void> {
   paint('1/9 · creating 3D gallery (WebGL)')
   const stage = document.getElementById('stage')!
-  const gallery = new Gallery(stage)
+  gallery = new Gallery(stage)
 
   paint('2/9 · wiring interface')
   const ui = new UI(gallery, () => {
@@ -118,19 +120,70 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault()
     invoke<boolean>('toggle_fullscreen')
   }
+  // Zoom shortcuts: Ctrl++ / Ctrl+- (and Ctrl+= / Ctrl+-)
+  if ((e.metaKey || e.ctrlKey) && (e.key === '+' || e.key === '=')) {
+    e.preventDefault()
+    gallery.zoomIn()
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === '-') {
+    e.preventDefault()
+    gallery.zoomOut()
+  }
 })
 
 // Frameless window controls
 const appWindow = getCurrentWindow()
 document.getElementById('tb-min')?.addEventListener('click', () => appWindow.minimize())
-document.getElementById('tb-max')?.addEventListener('click', () => appWindow.toggleMaximize())
 document.getElementById('tb-close')?.addEventListener('click', () => appWindow.close())
 
-// Pinch-to-zoom: trackpad pinch sends Ctrl+wheel — prevent the browser's
-// page-zoom so OrbitControls handles it as gallery zoom instead.
-document.addEventListener('wheel', (e) => {
-  if (e.ctrlKey) e.preventDefault()
+// Maximize button toggles between □ (maximize) and ❐ (restore)
+const maxBtn = document.getElementById('tb-max')
+const setMaxIcon = async () => {
+  if (!maxBtn) return
+  const maxed = await appWindow.isMaximized()
+  maxBtn.innerHTML = maxed
+    ? '<svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>'
+    : '<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>'
+}
+document.getElementById('tb-max')?.addEventListener('click', () => appWindow.toggleMaximize())
+setMaxIcon()
+appWindow.on('resize', setMaxIcon)
+
+// Zoom buttons
+document.getElementById('zoomInBtn')?.addEventListener('click', () => gallery.zoomIn())
+document.getElementById('zoomOutBtn')?.addEventListener('click', () => gallery.zoomOut())
+
+// Manual pinch-to-zoom: track two-finger touch and dolly the camera
+let pinchStartDistance = 0
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    pinchStartDistance = Math.hypot(dx, dy)
+  }
+}, { passive: true })
+
+document.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2 && pinchStartDistance > 0) {
+    e.preventDefault()
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    const currentDistance = Math.hypot(dx, dy)
+    const factor = currentDistance / pinchStartDistance
+    if (factor > 1) {
+      gallery.zoomIn()
+    } else if (factor < 1) {
+      gallery.zoomOut()
+    }
+    pinchStartDistance = currentDistance
+  }
 }, { passive: false })
+
+document.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) {
+    pinchStartDistance = 0
+  }
+}, { passive: true })
 
 window.addEventListener('focus', () => document.dispatchEvent(new CustomEvent('gallery:focus')))
 window.addEventListener('blur', () => document.dispatchEvent(new CustomEvent('gallery:blur')))

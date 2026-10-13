@@ -68,8 +68,8 @@ export class Gallery {
   constructor(container: HTMLElement) {
     this.container = container
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color(0x08080c)
-    this.scene.fog = new THREE.Fog(0x08080c, 16, 42)
+    this.scene.background = new THREE.Color(0x1a1a2e)
+    this.scene.fog = new THREE.Fog(0x1a1a2e, 16, 42)
 
     this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200)
     this.camera.position.set(0, 3.2, 13.5)
@@ -490,7 +490,7 @@ export class Gallery {
     if (this.bloomPass) this.bloomPass.strength = 0.15 + v * 0.5
     if (this.dust) this.dust.material.opacity = 0.25 + v * 0.45
     // Tie background + fog to mood so the whole room brightens/dims together
-    const bg = new THREE.Color(0x08080c).multiplyScalar(0.7 + v * 0.6)
+    const bg = new THREE.Color(0x1a1a2e).multiplyScalar(0.5 + v * 1.5)
     this.scene.background = bg
     if (this.scene.fog) this.scene.fog.color.copy(bg)
   }
@@ -514,6 +514,25 @@ export class Gallery {
 
   toggleFullscreen(): void {
     invoke<boolean>('toggle_fullscreen')
+  }
+
+  zoomIn(): void {
+    this.dollyCamera(0.8)
+  }
+
+  zoomOut(): void {
+    this.dollyCamera(1.25)
+  }
+
+  private dollyCamera(factor: number): void {
+    const cam = this.camera
+    const tgt = this.controls.target
+    const dir = cam.position.clone().sub(tgt)
+    const len = dir.length() * factor
+    const clamped = Math.max(this.controls.minDistance, Math.min(this.controls.maxDistance, len))
+    dir.setLength(clamped)
+    cam.position.copy(tgt.clone().add(dir))
+    this.controls.update()
   }
 
   captureView(): Promise<string> {
