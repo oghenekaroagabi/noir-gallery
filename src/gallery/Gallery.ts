@@ -221,7 +221,7 @@ export class Gallery {
     ;[-1, 1].forEach((side) => {
       const wall = new THREE.Mesh(
         new THREE.BoxGeometry(30, 7, 0.35),
-        new THREE.MeshStandardMaterial({ color: 0x2e2e3c, roughness: 0.7, metalness: 0.15 })
+        new THREE.MeshStandardMaterial({ color: 0xd5ccbc, roughness: 0.85, metalness: 0.05 })
       )
       wall.position.set(0, 3.5, side * 6.4)
       wall.receiveShadow = true
@@ -234,9 +234,9 @@ export class Gallery {
       strip.position.set(0, 0.6, side * 6.4)
       this.wallGroup.add(strip)
 
-      // Wall-wash light: soft pool aimed at this wall's face so it reads
-      // as a lit surface instead of a dark slab.
-      const wash = new THREE.PointLight(0xbfc6e0, 2.2, 34, 2)
+      // Wall-wash light: gentle shaping on the cream wall so it reads as a
+      // lit surface with soft falloff, not a flat bright slab.
+      const wash = new THREE.PointLight(0xbfc6e0, 0.7, 34, 2)
       wash.position.set(0, 5.2, side * 2.6)
       this.wallGroup.add(wash)
     })
@@ -298,6 +298,61 @@ export class Gallery {
     return t
   }
 
+  /** Art-deco sunburst pattern for the mat backing behind each artwork. */
+  private backingTexture(): THREE.Texture {
+    const S = 512
+    const c = document.createElement('canvas')
+    c.width = S
+    c.height = S
+    const x = c.getContext('2d')!
+
+    // Warm bone base with a soft radial sheen
+    x.fillStyle = '#d8cdb8'
+    x.fillRect(0, 0, S, S)
+    const g = x.createRadialGradient(S / 2, S / 2, S * 0.05, S / 2, S / 2, S * 0.75)
+    g.addColorStop(0, 'rgba(255,250,238,0.85)')
+    g.addColorStop(1, 'rgba(150,138,116,0.35)')
+    x.fillStyle = g
+    x.fillRect(0, 0, S, S)
+
+    // Art-deco sunburst: radiating lines from the centre
+    const cx = S / 2
+    const cy = S / 2
+    x.strokeStyle = 'rgba(201,162,39,0.30)'
+    x.lineWidth = 2
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2
+      x.beginPath()
+      x.moveTo(cx, cy)
+      x.lineTo(cx + Math.cos(a) * S, cy + Math.sin(a) * S)
+      x.stroke()
+    }
+
+    // Two concentric deco rings
+    x.strokeStyle = 'rgba(201,162,39,0.45)'
+    x.lineWidth = 4
+    x.beginPath(); x.arc(cx, cy, S * 0.26, 0, Math.PI * 2); x.stroke()
+    x.lineWidth = 2
+    x.beginPath(); x.arc(cx, cy, S * 0.33, 0, Math.PI * 2); x.stroke()
+
+    // Small radiating ticks on the outer ring
+    x.strokeStyle = 'rgba(201,162,39,0.35)'
+    x.lineWidth = 2
+    for (let i = 0; i < 48; i++) {
+      const a = (i / 48) * Math.PI * 2
+      const r0 = S * 0.36
+      const r1 = S * 0.41
+      x.beginPath()
+      x.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0)
+      x.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1)
+      x.stroke()
+    }
+
+    const t = new THREE.CanvasTexture(c)
+    t.colorSpace = THREE.SRGBColorSpace
+    return t
+  }
+
   private plaqueTexture(title: string): THREE.Texture {
     const c = document.createElement('canvas')
     c.width = 512
@@ -325,7 +380,12 @@ export class Gallery {
     const d = 0.12
 
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.92, roughness: 0.28 })
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0xd8cdb8, roughness: 0.85, metalness: 0.0 })
+    const darkMat = new THREE.MeshStandardMaterial({
+      map: this.backingTexture(),
+      color: 0xd8cdb8,
+      roughness: 0.55,
+      metalness: 0.25,
+    })
 
     const bar = (bw: number, bh: number, px: number, py: number) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, d), goldMat)
@@ -495,9 +555,10 @@ export class Gallery {
   /** The camera/target framing each mode should settle into. */
   private viewForMode(mode: Mode): { cam: THREE.Vector3; target: THREE.Vector3 } {
     if (mode === 'wall') {
+      // Inside the corridor (walls sit at z = ±6.4), angled down its length
       return {
-        cam: new THREE.Vector3(0, 3.0, 12.5),
-        target: new THREE.Vector3(0, 2.3, 0),
+        cam: new THREE.Vector3(12, 3.2, 3.5),
+        target: new THREE.Vector3(-6, 2.3, 0),
       }
     }
     return {
@@ -527,8 +588,8 @@ export class Gallery {
     if (this.bloomPass) this.bloomPass.strength = 0.15 + v * 0.5
     if (this.dust) this.dust.material.opacity = 0.25 + v * 0.45
     // Tie background + fog to mood so the whole room brightens/dims together
-    // v=0 -> 0.5 (lowest, unchanged). v=1 -> 3.0 (new max, crack-it-up headroom)
-    const bg = new THREE.Color(0x1a1a2e).multiplyScalar(0.5 + v * 2.5)
+    // v=0 -> 1.2 (dark). v=0.5 -> 3.0 (default = old max). v=1 -> 4.8 (brighter)
+    const bg = new THREE.Color(0x1a1a2e).multiplyScalar(1.2 + v * 3.6)
     this.scene.background = bg
     if (this.scene.fog) this.scene.fog.color.copy(bg)
   }
@@ -550,8 +611,10 @@ export class Gallery {
     this.layout()
   }
 
-  toggleFullscreen(): void {
-    invoke<boolean>('toggle_fullscreen')
+  async toggleFullscreen(): Promise<void> {
+    const nowFs = await invoke<boolean>('toggle_fullscreen')
+    // Hide all chrome in fullscreen for a pure, immersive canvas
+    document.body.classList.toggle('fs', nowFs)
   }
 
   zoomIn(): void {

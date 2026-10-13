@@ -3,6 +3,7 @@ import { Gallery, type SeedArtwork } from './gallery/Gallery'
 import { UI } from './ui/UI'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { LogicalSize } from '@tauri-apps/api/dpi'
 
 declare global {
   interface Window {
@@ -104,9 +105,12 @@ async function loadGallery(ui: UI, gallery: Gallery, libraryPath: string): Promi
 /** Premium reveal: deliberate "hanging" pause before the gallery appears. */
 async function premiumReveal(ui: UI): Promise<void> {
   paint('Hanging the collection…')
-  await new Promise((r) => setTimeout(r, 2000))
+  await new Promise((r) => setTimeout(r, 4000))
   ui.hideLoader()
   ui.showHint()
+  // Reveal the chrome only once the gallery is live — prevents the
+  // pre-splash flash of titlebar/topbar/tools on launch.
+  document.body.classList.add('ready')
 }
 
 // Keyboard shortcuts
@@ -145,7 +149,16 @@ const setMaxIcon = async () => {
     ? '<svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>'
     : '<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>'
 }
-document.getElementById('tb-max')?.addEventListener('click', () => appWindow.toggleMaximize())
+document.getElementById('tb-max')?.addEventListener('click', async () => {
+  const maxed = await appWindow.isMaximized()
+  if (maxed) {
+    // Restore drops to the smallest window we can have, not the default size
+    await appWindow.unmaximize()
+    await appWindow.setSize(new LogicalSize(1000, 700))
+  } else {
+    await appWindow.maximize()
+  }
+})
 setMaxIcon()
   // Use listen with tauri://resize event (fallback if .on doesn't exist)
   if (typeof appWindow.on === 'function') {

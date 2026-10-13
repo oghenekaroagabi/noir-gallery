@@ -114,6 +114,34 @@ canvas {
   color: var(--txt-dim);
 }
 
+/* ---------- Chrome reveal ----------
+   All UI stays hidden until the gallery is ready, so nothing flashes
+   behind the splash on launch. `body.ready` fades the chrome in. */
+#titlebar,
+#topbar,
+#tools,
+#hint {
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+body.ready #titlebar,
+body.ready #topbar,
+body.ready #tools,
+body.ready #hint {
+  opacity: 1;
+}
+
+/* Fullscreen: strip all chrome for a pure, immersive canvas */
+body.fs #titlebar,
+body.fs #topbar,
+body.fs #tools,
+body.fs #hint,
+body.fs #vignette {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- Title bar (frameless window controls) ---------- */
 #titlebar {
   position: fixed;
