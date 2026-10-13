@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 
 export type Mode = 'ring' | 'wall' | 'grid'
@@ -76,6 +77,13 @@ export class Gallery {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
     this.renderer.setSize(container.clientWidth, container.clientHeight)
+
+    // Environment map: metals have nothing to reflect without it, so gold
+    // frames render black. RoomEnvironment gives every metal something real.
+    const pmrem = new THREE.PMREMGenerator(this.renderer)
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    this.scene.environmentIntensity = 0.45
+    pmrem.dispose()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -640,6 +648,10 @@ export class Gallery {
     const nowFs = await invoke<boolean>('toggle_fullscreen')
     // Hide all chrome in fullscreen for a pure, immersive canvas
     document.body.classList.toggle('fs', nowFs)
+    // The canvas is sized in JS, not by CSS. Fullscreen changes the container
+    // instantly but the resize event can land before layout settles, leaving
+    // the canvas at its old size and showing a gap. Force it after a tick.
+    setTimeout(() => this.onResize(), 120)
   }
 
   zoomIn(): void {
