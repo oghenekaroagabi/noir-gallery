@@ -132,6 +132,11 @@ body.ready #hint {
   opacity: 1;
 }
 
+/* Must out-specify `body.ready #hint` so the hint can still fade out */
+body.ready #hint.hide {
+  opacity: 0;
+}
+
 /* Fullscreen: strip all chrome for a pure, immersive canvas */
 body.fs #titlebar,
 body.fs #topbar,

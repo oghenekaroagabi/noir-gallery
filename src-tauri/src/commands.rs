@@ -224,6 +224,18 @@ pub fn log_startup(app: AppHandle, msg: String) {
     log_line(&app, &msg);
 }
 
+/// Close the splash window and reveal the main gallery window.
+#[tauri::command]
+pub fn finish_splash(app: AppHandle) {
+    if let Some(splash) = app.get_webview_window("splash") {
+        let _ = splash.close();
+    }
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.show();
+        let _ = main.set_focus();
+    }
+}
+
 #[tauri::command]
 pub fn check_first_run(app: AppHandle) -> Result<FirstRunStatus, String> {
     log_line(&app, "check_first_run: entered");

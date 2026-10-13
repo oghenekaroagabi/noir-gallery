@@ -33,6 +33,7 @@ pub fn run() {
             commands::pick_library_folder,
             commands::import_seed_artworks,
             commands::log_startup,
+            commands::finish_splash,
         ])
         .setup(|app| {
             commands::log_startup(app.handle().clone(), "rust: builder setup complete".to_string());

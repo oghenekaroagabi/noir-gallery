@@ -106,6 +106,12 @@ async function loadGallery(ui: UI, gallery: Gallery, libraryPath: string): Promi
 async function premiumReveal(ui: UI): Promise<void> {
   paint('Hanging the collection…')
   await new Promise((r) => setTimeout(r, 4000))
+  // Swap: close the splash window, reveal main. No blank gap.
+  try {
+    await invoke('finish_splash')
+  } catch {
+    /* dev mode has no splash window */
+  }
   ui.hideLoader()
   ui.showHint()
   // Reveal the chrome only once the gallery is live — prevents the
@@ -118,6 +124,15 @@ document.addEventListener('keydown', (e) => {
   // Disable refresh (F5 / Ctrl+R) — a desktop app shouldn't reload like a browser
   if (e.key === 'F5' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r')) {
     e.preventDefault()
+    return
+  }
+  // Escape: close the artwork modal first; if none open, exit fullscreen
+  if (e.key === 'Escape') {
+    const modalOpen = document.getElementById('modal')?.classList.contains('show')
+    if (!modalOpen && document.body.classList.contains('fs')) {
+      e.preventDefault()
+      gallery?.toggleFullscreen()
+    }
     return
   }
   if ((e.metaKey || e.ctrlKey) && e.key === 'f') {

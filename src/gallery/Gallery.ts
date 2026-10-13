@@ -221,7 +221,12 @@ export class Gallery {
     ;[-1, 1].forEach((side) => {
       const wall = new THREE.Mesh(
         new THREE.BoxGeometry(30, 7, 0.35),
-        new THREE.MeshStandardMaterial({ color: 0xd5ccbc, roughness: 0.85, metalness: 0.05 })
+        new THREE.MeshStandardMaterial({
+          map: this.wallTexture(),
+          color: 0xffffff,
+          roughness: 0.55,
+          metalness: 0.12,
+        })
       )
       wall.position.set(0, 3.5, side * 6.4)
       wall.receiveShadow = true
@@ -298,6 +303,26 @@ export class Gallery {
     return t
   }
 
+  /** Cream gallery wall: vertical gradient, brighter at the picture rail. */
+  private wallTexture(): THREE.Texture {
+    const c = document.createElement('canvas')
+    c.width = 8
+    c.height = 256
+    const x = c.getContext('2d')!
+    // Dark at the top (ceiling), warming toward the rail at the bottom
+    const g = x.createLinearGradient(0, 0, 0, 256)
+    g.addColorStop(0.0, '#8f887a')
+    g.addColorStop(0.35, '#b3aa9a')
+    g.addColorStop(0.82, '#ddd4c4')
+    g.addColorStop(1.0, '#e8e0d0')
+    x.fillStyle = g
+    x.fillRect(0, 0, 8, 256)
+    const t = new THREE.CanvasTexture(c)
+    t.colorSpace = THREE.SRGBColorSpace
+    t.wrapS = THREE.RepeatWrapping
+    return t
+  }
+
   /** Art-deco sunburst pattern for the mat backing behind each artwork. */
   private backingTexture(): THREE.Texture {
     const S = 512
@@ -358,12 +383,12 @@ export class Gallery {
     c.width = 512
     c.height = 96
     const x = c.getContext('2d')!
-    x.fillStyle = '#0c0c11'
+    x.fillStyle = '#d5ccbc'
     x.fillRect(0, 0, 512, 96)
-    x.strokeStyle = 'rgba(201,162,39,.7)'
+    x.strokeStyle = 'rgba(138,109,20,.75)'
     x.lineWidth = 3
     x.strokeRect(6, 6, 500, 84)
-    x.fillStyle = '#e8c766'
+    x.fillStyle = '#6b5310'
     x.font = '600 34px Georgia'
     x.textAlign = 'center'
     x.fillText(title.length > 26 ? title.slice(0, 25) + '…' : title, 256, 58)
