@@ -9,12 +9,24 @@
       window.__NOIR = { moduleLoaded: false, last: 'booting' };
       function paint(msg) {
         window.__NOIR.last = msg;
+        // Only surface errors. Routine startup steps are never shown —
+        // the loading screen is just the mark and the line.
+        if (msg.indexOf('\u274C') !== 0) {
+          try { console.log('[NOIR] ' + msg); } catch (e) {}
+          return;
+        }
         try {
           var l = document.getElementById('loader');
+          if (l) { l.classList.remove('done'); l.style.opacity = '1'; l.style.pointerEvents = 'auto'; l.style.display = 'flex'; }
           var s = document.getElementById('loadMsg');
-          var isErr = msg.indexOf('\u274C') === 0;
-          if (l && isErr) { l.classList.remove('done'); l.style.opacity = '1'; l.style.pointerEvents = 'auto'; l.style.display = 'flex'; }
-          if (s) { s.textContent = msg; s.style.color = isErr ? '#ff6b6b' : ''; }
+          if (!s) {
+            s = document.createElement('div');
+            s.id = 'loadMsg';
+            s.className = 'sub';
+            if (l) l.appendChild(s);
+          }
+          s.textContent = msg;
+          s.style.color = '#ff6b6b';
         } catch (e) {}
         try { console.log('[NOIR] ' + msg); } catch (e) {}
       }
@@ -56,7 +68,6 @@
   <div id="loader">
     <div class="loader-mark">N O I R</div>
     <div class="bar"><i></i></div>
-    <div class="sub" id="loadMsg">Hanging the collection…</div>
   </div>
 
   <div id="topbar">

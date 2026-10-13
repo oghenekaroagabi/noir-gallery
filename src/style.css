@@ -147,6 +147,13 @@ body.fs #vignette {
   pointer-events: none;
 }
 
+/* Fullscreen: drop the mat entirely — art goes edge-to-edge */
+body.fs #stage,
+body.fs #vignette {
+  inset: 0;
+  border-radius: 0;
+}
+
 /* ---------- Title bar (frameless window controls) ---------- */
 #titlebar {
   position: fixed;

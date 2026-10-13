@@ -234,7 +234,7 @@ export class Gallery {
 
       const strip = new THREE.Mesh(
         new THREE.BoxGeometry(30, 0.1, 0.42),
-        new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.95, roughness: 0.3 })
+        new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.98, roughness: 0.15 })
       )
       strip.position.set(0, 0.6, side * 6.4)
       this.wallGroup.add(strip)
@@ -383,12 +383,12 @@ export class Gallery {
     c.width = 512
     c.height = 96
     const x = c.getContext('2d')!
-    x.fillStyle = '#d5ccbc'
+    x.fillStyle = '#0c0c11'
     x.fillRect(0, 0, 512, 96)
-    x.strokeStyle = 'rgba(138,109,20,.75)'
+    x.strokeStyle = 'rgba(201,162,39,.7)'
     x.lineWidth = 3
     x.strokeRect(6, 6, 500, 84)
-    x.fillStyle = '#6b5310'
+    x.fillStyle = '#e8c766'
     x.font = '600 34px Georgia'
     x.textAlign = 'center'
     x.fillText(title.length > 26 ? title.slice(0, 25) + '…' : title, 256, 58)
@@ -404,7 +404,7 @@ export class Gallery {
     const f = 0.13
     const d = 0.12
 
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.92, roughness: 0.28 })
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.98, roughness: 0.15 })
     const darkMat = new THREE.MeshStandardMaterial({
       map: this.backingTexture(),
       color: 0xd8cdb8,

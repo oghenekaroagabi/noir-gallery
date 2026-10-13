@@ -27,15 +27,9 @@ let gallery: Gallery | null = null
 
 if (window.__NOIR) window.__NOIR.moduleLoaded = true
 
-/** Paint the current step on the loader AND append it to a log file (best effort). */
+/** Append to the startup log file (invisible, used for debugging). */
 function paint(msg: string): void {
   if (window.__NOIR) window.__NOIR.last = msg
-  if (typeof window.__noirPaint === 'function') {
-    window.__noirPaint(msg)
-  } else {
-    const el = document.getElementById('loadMsg')
-    if (el) el.textContent = msg
-  }
   try {
     invoke('log_startup', { msg }).catch(() => {})
   } catch {
@@ -44,19 +38,18 @@ function paint(msg: string): void {
 }
 
 async function init(): Promise<void> {
-  paint('1/9 · creating 3D gallery (WebGL)')
+  paint('creating 3D gallery (WebGL)')
   const stage = document.getElementById('stage')!
   gallery = new Gallery(stage)
 
-  paint('2/9 · wiring interface')
+  paint('wiring interface')
   const ui = new UI(gallery, () => {
     ui.hideLoader()
     ui.showHint()
   })
 
-  paint('3/9 · calling check_first_run')
+  paint('calling check_first_run')
   const status = await invoke<{ is_first_run: boolean; library_path: string | null }>('check_first_run')
-  paint('4/9 · check_first_run → ' + JSON.stringify(status))
 
   if (status.is_first_run || !status.library_path) {
     ui.showLoader()
@@ -70,48 +63,41 @@ async function init(): Promise<void> {
 }
 
 async function runFirstRun(ui: UI, gallery: Gallery): Promise<void> {
-  paint('5/9 · opening folder picker')
+  paint('opening folder picker')
   const folder = await invoke<string | null>('pick_library_folder')
-  paint('6/9 · folder = ' + String(folder))
   if (!folder) {
     ui.showError('Please choose a library folder')
     return
   }
 
   await invoke('complete_first_run', { libraryPath: folder })
-  paint('7/9 · setup saved')
+  paint('setup saved')
 
   const seeds = await invoke<SeedArtwork[]>('get_seed_artworks')
-  paint('8/9 · importing ' + seeds.length + ' seeds')
+  paint('importing ' + seeds.length + ' seeds')
   await invoke('import_seed_artworks', { libraryPath: folder })
 
   await gallery.loadSeedArtworks(seeds, folder)
-  paint('9/9 · ready')
+  paint('ready')
 }
 
 async function loadGallery(ui: UI, gallery: Gallery, libraryPath: string): Promise<void> {
   const seeds = await invoke<SeedArtwork[]>('get_seed_artworks')
-  paint('5/9 · loading ' + seeds.length + ' artworks')
+  paint('loading ' + seeds.length + ' artworks')
   await gallery.loadSeedArtworks(seeds, libraryPath)
 
   const saved = await invoke<ArtworkMetadata[]>('load_artwork_metadata')
   if (saved.length > 0) {
-    paint('6/9 · restoring ' + saved.length + ' uploads')
+    paint('restoring ' + saved.length + ' uploads')
     await gallery.loadUploadedArtworks(saved)
   }
-  paint('9/9 · ready')
+  paint('ready')
 }
 
 /** Premium reveal: deliberate "hanging" pause before the gallery appears. */
 async function premiumReveal(ui: UI): Promise<void> {
-  paint('Hanging the collection…')
+  paint('hanging the collection')
   await new Promise((r) => setTimeout(r, 4000))
-  // Swap: close the splash window, reveal main. No blank gap.
-  try {
-    await invoke('finish_splash')
-  } catch {
-    /* dev mode has no splash window */
-  }
   ui.hideLoader()
   ui.showHint()
   // Reveal the chrome only once the gallery is live — prevents the
