@@ -221,7 +221,7 @@ export class Gallery {
     ;[-1, 1].forEach((side) => {
       const wall = new THREE.Mesh(
         new THREE.BoxGeometry(30, 7, 0.35),
-        new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.85, metalness: 0.15 })
+        new THREE.MeshStandardMaterial({ color: 0x2e2e3c, roughness: 0.7, metalness: 0.15 })
       )
       wall.position.set(0, 3.5, side * 6.4)
       wall.receiveShadow = true
@@ -233,6 +233,12 @@ export class Gallery {
       )
       strip.position.set(0, 0.6, side * 6.4)
       this.wallGroup.add(strip)
+
+      // Wall-wash light: soft pool aimed at this wall's face so it reads
+      // as a lit surface instead of a dark slab.
+      const wash = new THREE.PointLight(0xbfc6e0, 2.2, 34, 2)
+      wash.position.set(0, 5.2, side * 2.6)
+      this.wallGroup.add(wash)
     })
   }
 
@@ -319,7 +325,7 @@ export class Gallery {
     const d = 0.12
 
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.92, roughness: 0.28 })
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0x0d0d12, roughness: 0.6, metalness: 0.4 })
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0xd8cdb8, roughness: 0.85, metalness: 0.0 })
 
     const bar = (bw: number, bh: number, px: number, py: number) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, d), goldMat)
@@ -481,6 +487,37 @@ export class Gallery {
     if (this.focused) this.closeFocus(true)
     this.mode = mode
     this.layout()
+    // Tween the camera to a composed framing for this mode so entering
+    // Gallery Wall always opens on a centred, symmetrical view.
+    this.tweenCameraTo(this.viewForMode(mode))
+  }
+
+  /** The camera/target framing each mode should settle into. */
+  private viewForMode(mode: Mode): { cam: THREE.Vector3; target: THREE.Vector3 } {
+    if (mode === 'wall') {
+      return {
+        cam: new THREE.Vector3(0, 3.0, 12.5),
+        target: new THREE.Vector3(0, 2.3, 0),
+      }
+    }
+    return {
+      cam: new THREE.Vector3(0, 3.2, 13.5),
+      target: new THREE.Vector3(0, 1.8, 0),
+    }
+  }
+
+  /** Smoothly move the camera + orbit target to a framing. */
+  private tweenCameraTo(view: { cam: THREE.Vector3; target: THREE.Vector3 }): void {
+    if (this.focused) return
+    this.tween = {
+      t: 0,
+      dur: 1.4,
+      fromCam: this.camera.position.clone(),
+      fromTgt: this.controls.target.clone(),
+      toCam: view.cam,
+      toTgt: view.target,
+      onDone: null,
+    }
   }
 
   setMood(v: number): void {
@@ -490,7 +527,8 @@ export class Gallery {
     if (this.bloomPass) this.bloomPass.strength = 0.15 + v * 0.5
     if (this.dust) this.dust.material.opacity = 0.25 + v * 0.45
     // Tie background + fog to mood so the whole room brightens/dims together
-    const bg = new THREE.Color(0x1a1a2e).multiplyScalar(0.5 + v * 1.5)
+    // v=0 -> 0.5 (lowest, unchanged). v=1 -> 3.0 (new max, crack-it-up headroom)
+    const bg = new THREE.Color(0x1a1a2e).multiplyScalar(0.5 + v * 2.5)
     this.scene.background = bg
     if (this.scene.fog) this.scene.fog.color.copy(bg)
   }
