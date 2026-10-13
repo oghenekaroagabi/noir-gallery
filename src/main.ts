@@ -147,7 +147,12 @@ const setMaxIcon = async () => {
 }
 document.getElementById('tb-max')?.addEventListener('click', () => appWindow.toggleMaximize())
 setMaxIcon()
-appWindow.on('resize', setMaxIcon)
+  // Use listen with tauri://resize event (fallback if .on doesn't exist)
+  if (typeof appWindow.on === 'function') {
+    appWindow.on('resize', setMaxIcon)
+  } else {
+    appWindow.listen('tauri://resize', setMaxIcon)
+  }
 
 // Zoom buttons
 document.getElementById('zoomInBtn')?.addEventListener('click', () => gallery.zoomIn())
