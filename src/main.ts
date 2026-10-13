@@ -126,6 +126,12 @@ document.getElementById('tb-min')?.addEventListener('click', () => appWindow.min
 document.getElementById('tb-max')?.addEventListener('click', () => appWindow.toggleMaximize())
 document.getElementById('tb-close')?.addEventListener('click', () => appWindow.close())
 
+// Pinch-to-zoom: trackpad pinch sends Ctrl+wheel — prevent the browser's
+// page-zoom so OrbitControls handles it as gallery zoom instead.
+document.addEventListener('wheel', (e) => {
+  if (e.ctrlKey) e.preventDefault()
+}, { passive: false })
+
 window.addEventListener('focus', () => document.dispatchEvent(new CustomEvent('gallery:focus')))
 window.addEventListener('blur', () => document.dispatchEvent(new CustomEvent('gallery:blur')))
 

@@ -7,6 +7,8 @@
   --txt: #EDEAE2;
   --txt-dim: #9a97a3;
   --font: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif;
+  --pad: 20px;
+  --radius: 16px;
 }
 
 * {
@@ -27,20 +29,26 @@ html, body {
 
 #stage {
   position: fixed;
-  inset: 0;
+  inset: calc(32px + var(--pad)) var(--pad) var(--pad);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
 }
 
 canvas {
   display: block;
+  width: 100%;
+  height: 100%;
   touch-action: none;
 }
 
 /* vignette */
 #vignette {
   position: fixed;
-  inset: 0;
+  inset: calc(32px + var(--pad)) var(--pad) var(--pad);
   z-index: 30;
   pointer-events: none;
+  border-radius: var(--radius);
   background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(0, 0, 0, 0.6) 100%);
 }
 
@@ -171,13 +179,13 @@ canvas {
 /* ---------- Top glass bar ---------- */
 #topbar {
   position: fixed;
-  top: 32px;
-  left: 0;
-  right: 0;
+  top: calc(32px + var(--pad));
+  left: var(--pad);
+  right: var(--pad);
   z-index: 50;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 14px 16px;
   pointer-events: none;
   gap: 10px;
@@ -284,8 +292,8 @@ canvas {
 /* ---------- Left tool dock ---------- */
 #tools {
   position: fixed;
-  left: 16px;
-  bottom: 18px;
+  left: calc(var(--pad) + 16px);
+  bottom: calc(var(--pad) + 18px);
   z-index: 45;
   display: flex;
   flex-direction: column;
@@ -362,7 +370,7 @@ canvas {
 /* ---------- Hint ---------- */
 #hint {
   position: fixed;
-  bottom: 18px;
+  bottom: calc(var(--pad) + 18px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;

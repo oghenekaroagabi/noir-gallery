@@ -75,10 +75,11 @@ export class Gallery {
     this.camera.position.set(0, 3.2, 13.5)
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
-    this.renderer.setSize(window.innerWidth, window.innerHeight)
+    this.renderer.setSize(container.clientWidth, container.clientHeight)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.renderer.toneMappingExposure = 1.15
     container.appendChild(this.renderer.domElement)
 
     // Post-processing
@@ -105,22 +106,25 @@ export class Gallery {
     this.controls.autoRotateSpeed = 0.55
 
     // Lights
-    this.ambient = new THREE.AmbientLight(0x33333f, 1.0)
+    this.ambient = new THREE.AmbientLight(0x33333f, 1.8)
     this.scene.add(this.ambient)
 
-    this.keySpot = new THREE.SpotLight(0xfff2d0, 1.3, 60, Math.PI / 5, 0.45, 1.2)
+    this.keySpot = new THREE.SpotLight(0xfff2d0, 2.5, 60, Math.PI / 5, 0.45, 1.2)
     this.keySpot.position.set(8, 14, 6)
     this.keySpot.castShadow = true
     this.keySpot.shadow.mapSize.set(1024, 1024)
     this.scene.add(this.keySpot)
 
-    this.fillSpot = new THREE.SpotLight(0xc9a227, 0.6, 60, Math.PI / 4, 0.6, 1.4)
+    this.fillSpot = new THREE.SpotLight(0xc9a227, 1.2, 60, Math.PI / 4, 0.6, 1.4)
     this.fillSpot.position.set(-10, 10, -6)
     this.scene.add(this.fillSpot)
 
     const rim = new THREE.PointLight(0x4a5a8a, 0.5, 40)
     rim.position.set(0, 6, -12)
     this.scene.add(rim)
+
+    const hemi = new THREE.HemisphereLight(0x8a8fa8, 0x1a1a22, 0.6)
+    this.scene.add(hemi)
 
     // Floor
     this.buildFloor()
@@ -480,11 +484,15 @@ export class Gallery {
   }
 
   setMood(v: number): void {
-    this.keySpot.intensity = 0.25 + v * 2.1
-    this.fillSpot.intensity = 0.15 + v * 1.0
-    this.ambient.intensity = 0.45 + v * 1.1
+    this.keySpot.intensity = 0.4 + v * 3.0
+    this.fillSpot.intensity = 0.25 + v * 1.5
+    this.ambient.intensity = 0.7 + v * 1.6
     if (this.bloomPass) this.bloomPass.strength = 0.15 + v * 0.5
     if (this.dust) this.dust.material.opacity = 0.25 + v * 0.45
+    // Tie background + fog to mood so the whole room brightens/dims together
+    const bg = new THREE.Color(0x08080c).multiplyScalar(0.7 + v * 0.6)
+    this.scene.background = bg
+    if (this.scene.fog) this.scene.fog.color.copy(bg)
   }
 
   shuffle(): void {
@@ -703,10 +711,12 @@ export class Gallery {
   }
 
   private onResize(): void {
-    this.camera.aspect = window.innerWidth / window.innerHeight
+    const w = this.container.clientWidth
+    const h = this.container.clientHeight
+    this.camera.aspect = w / h
     this.camera.updateProjectionMatrix()
-    this.renderer.setSize(window.innerWidth, window.innerHeight)
-    if (this.composer) this.composer.setSize(window.innerWidth, window.innerHeight)
+    this.renderer.setSize(w, h)
+    if (this.composer) this.composer.setSize(w, h)
   }
 
   private animate(): void {
